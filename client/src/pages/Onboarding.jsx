@@ -1,25 +1,42 @@
 import { useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { motion, AnimatePresence } from "framer-motion"
-import { BookOpen, Briefcase, Code, Clock, Target, ChevronRight, ChevronLeft, Check } from "lucide-react"
+import {
+  BookOpen,
+  Briefcase,
+  Code,
+  Clock,
+  Target,
+  ChevronRight,
+  ChevronLeft,
+  Check,
+  User,
+  UserCheck,
+  Zap,
+  Star,
+  Shuffle,
+  Play,
+  FileText,
+  Eye,
+} from "lucide-react"
 import toast from "react-hot-toast"
 import { users } from "../services/api"
 import { useAuthStore } from "../store/authStore"
 
 const EXPERIENCE_OPTIONS = [
-  { value: "student", label: "Student", icon: "??", desc: "Currently studying" },
-  { value: "junior", label: "Junior", icon: "??", desc: "0-2 years exp" },
-  { value: "mid", label: "Mid-level", icon: "??", desc: "2-5 years exp" },
-  { value: "senior", label: "Senior", icon: "?", desc: "5+ years exp" },
-  { value: "career-changer", label: "Career Changer", icon: "??", desc: "Switching fields" }
+  { value: "student", label: "Student", icon: <User />, desc: "Currently studying" },
+  { value: "junior", label: "Junior", icon: <UserCheck />, desc: "0-2 years exp" },
+  { value: "mid", label: "Mid-level", icon: <Zap />, desc: "2-5 years exp" },
+  { value: "senior", label: "Senior", icon: <Star />, desc: "5+ years exp" },
+  { value: "career-changer", label: "Career Changer", icon: <Shuffle />, desc: "Switching fields" },
 ]
 
 const COMMON_SKILLS = ["Python", "JavaScript", "React", "Node.js", "SQL", "Java", "C++", "Machine Learning", "Data Analysis", "AWS", "Docker", "Git", "TypeScript", "MongoDB"]
 const LEARNING_STYLES = [
-  { value: "video", label: "Video Courses", icon: "??" },
-  { value: "reading", label: "Reading", icon: "??" },
-  { value: "project-based", label: "Projects", icon: "???" },
-  { value: "visual", label: "Visual Diagrams", icon: "???" }
+  { value: "video", label: "Video Courses", icon: <Play /> },
+  { value: "reading", label: "Reading", icon: <BookOpen /> },
+  { value: "project-based", label: "Projects", icon: <FileText /> },
+  { value: "visual", label: "Visual Diagrams", icon: <Eye /> },
 ]
 const TIMEFRAMES = [{ value: 4, label: "1 Month" }, { value: 8, label: "2 Months" }, { value: 12, label: "3 Months" }, { value: 24, label: "6 Months" }]
 
@@ -131,7 +148,7 @@ export default function Onboarding() {
                   {COMMON_SKILLS.map((skill) => (
                     <button key={skill} type="button" onClick={() => toggleSkill(skill)}
                       className={`badge px-3 py-1.5 cursor-pointer transition-all ${data.skills.includes(skill) ? "bg-primary-700 text-primary-100" : "bg-gray-800 text-gray-300 hover:bg-gray-700"}`}>
-                      {data.skills.includes(skill) && "? "}{skill}
+                      {data.skills.includes(skill) && <Check className="inline-block h-4 w-4 mr-1" />}{skill}
                     </button>
                   ))}
                 </div>
