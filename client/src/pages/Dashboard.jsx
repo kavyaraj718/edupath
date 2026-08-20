@@ -28,7 +28,7 @@ export default function Dashboard() {
       <main className="flex-1 md:ml-64 p-6 space-y-6">
         <div className="flex items-start justify-between">
           <div>
-            <h1 className="text-2xl font-bold">Good morning, {user?.name?.split(" ")[0]} ??</h1>
+            <h1 className="text-2xl font-bold">Good morning, {user?.name?.split(" ")[0]} 👋</h1>
             <p className="text-gray-400 mt-1">Here's your learning progress</p>
           </div>
           <button onClick={() => navigate("/chat")} className="btn-primary flex items-center gap-2">
