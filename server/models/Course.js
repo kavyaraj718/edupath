@@ -51,7 +51,7 @@ courseSchema.index({ domain: 1, difficulty: 1, isFree: 1 });
 // ─── Static Method: findSimilar (Atlas Vector Search) ────────────────────────
 /**
  * Find courses similar to a given embedding using MongoDB Atlas $vectorSearch.
- * @param {number[]} queryEmbedding - Dense float array from OpenAI embeddings.
+ * @param {number[]} queryEmbedding - Dense float array from Gemini embeddings.
  * @param {number}   limit          - Max number of results to return.
  * @param {string[]} excludeIds     - Array of course IDs (strings) to exclude.
  * @returns {Promise<Course[]>}
