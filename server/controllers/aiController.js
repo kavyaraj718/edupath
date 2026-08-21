@@ -226,7 +226,7 @@ Identify the skill gap for this user to be job-ready for the target role.`;
       systemInstruction: systemPrompt,
       generationConfig: {
         temperature: 0.2,
-        maxOutputTokens: 800,
+        maxOutputTokens: 2500,
         responseMimeType: 'application/json',
       },
     });
