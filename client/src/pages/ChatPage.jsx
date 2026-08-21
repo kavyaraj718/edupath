@@ -1,15 +1,70 @@
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import { useNavigate } from "react-router-dom"
-import { Map, Plus, Loader2 } from "lucide-react"
+import { Bot, Map, Plus, Loader2 } from "lucide-react"
 import Sidebar from "../components/layout/Sidebar"
 import ChatInterface from "../components/chat/ChatInterface"
 import { usePathStore } from "../store/pathStore"
+import { useAuthStore } from "../store/authStore"
 
 export default function ChatPage() {
   const { paths, loadPaths, activePath, setActivePath, isLoading } = usePathStore()
+  const { user, loadUser } = useAuthStore()
   const navigate = useNavigate()
+  const legacySession = user?.chatHistory?.length
+    ? [{ _id: "legacy", title: "Previous chat", messages: user.chatHistory }]
+    : []
+  const initialSessions = user?.chatSessions?.length ? user.chatSessions : legacySession
+  const [chatSessions, setChatSessions] = useState(() => initialSessions)
+  const [activeSessionId, setActiveSessionId] = useState(() =>
+    initialSessions[0]?._id || crypto.randomUUID()
+  )
 
-  useEffect(() => { loadPaths() }, [loadPaths])
+  useEffect(() => {
+    loadPaths()
+    loadUser()
+  }, [loadPaths, loadUser])
+
+  useEffect(() => {
+    const sessions = user?.chatSessions?.length ? user.chatSessions : legacySession
+    if (!sessions.length) return
+
+    setChatSessions(sessions)
+    setActiveSessionId((currentId) =>
+      sessions.some((session) => session._id === currentId)
+        ? currentId
+        : sessions[0]._id
+    )
+  }, [user?.chatSessions, user?.chatHistory])
+
+  const startNewChat = () => {
+    setActivePath(null)
+    setActiveSessionId(crypto.randomUUID())
+    navigate("/chat")
+  }
+
+  const selectChat = (sessionId) => {
+    setActivePath(null)
+    setActiveSessionId(sessionId)
+    navigate("/chat")
+  }
+
+  const updateSession = (message, response) => {
+    setChatSessions((current) => {
+      const existingSession = current.find((session) => session._id === activeSessionId)
+      const newMessages = [
+        { role: "user", content: message },
+        { role: "assistant", content: response },
+      ]
+
+      if (existingSession) {
+        return current.map((session) => session._id === activeSessionId
+          ? { ...session, messages: [...(session.messages || []), ...newMessages] }
+          : session)
+      }
+
+      return [...current, { _id: activeSessionId, title: message.slice(0, 80), messages: newMessages }]
+    })
+  }
 
   return (
     <div className="flex min-h-screen bg-gray-950">
@@ -19,12 +74,21 @@ export default function ChatPage() {
           <div className="flex items-center justify-between">
             <h2 className="font-semibold text-sm text-gray-300">Your Paths</h2>
             
-            {/* FIX 1: Navigate back to /chat while clearing the active path */}
-            <button onClick={() => { setActivePath(null); navigate("/chat"); }} className="text-xs text-primary-400 hover:text-primary-300 flex items-center gap-1">
+            <button onClick={startNewChat} className="text-xs text-primary-400 hover:text-primary-300 flex items-center gap-1">
               <Plus className="h-3 w-3" /> New
             </button>
-            
           </div>
+          {chatSessions.length > 0 && (
+            <div className="space-y-1 border-b border-gray-800 pb-3">
+              {chatSessions.map((session) => (
+                <button key={session._id} onClick={() => selectChat(session._id)}
+                  className={`w-full flex items-center gap-2 rounded-lg px-3 py-2 text-left text-sm ${activeSessionId === session._id ? "bg-gray-800 text-white" : "text-gray-400 hover:bg-gray-800 hover:text-white"}`}>
+                  <Bot className="h-3 w-3 shrink-0" />
+                  <span className="truncate">{session.title || "New chat"}</span>
+                </button>
+              ))}
+            </div>
+          )}
           {isLoading ? (
             <div className="flex justify-center py-4"><Loader2 className="h-5 w-5 animate-spin text-gray-500" /></div>
           ) : paths.length === 0 ? (
@@ -54,9 +118,13 @@ export default function ChatPage() {
           </div>
           <div className="flex-1 min-h-0 min-w-0 overflow-hidden">
             
-            {/* FIX 2: Added the key prop to force React to reset the component */}
-            <ChatInterface key={activePath?._id || 'new-chat'} contextPath={activePath} />
-            
+            <ChatInterface
+              key={`${activeSessionId}-${activePath?._id || "none"}`}
+              contextPath={activePath}
+              sessionId={activeSessionId}
+              chatSession={chatSessions.find((session) => session._id === activeSessionId)}
+              onSessionTitle={updateSession}
+            />
           </div>
         </div>
       </div>

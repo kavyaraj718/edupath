@@ -90,7 +90,7 @@ const generatePath = async (req, res, next) => {
 // ─── POST /api/ai/chat ────────────────────────────────────────────────────────
 const chat = async (req, res, next) => {
   try {
-    const { message, activePathId } = req.body;
+    const { message, activePathId, sessionId } = req.body;
 
     if (!message || typeof message !== 'string') {
       return res.status(400).json({
@@ -113,7 +113,7 @@ const chat = async (req, res, next) => {
     }
 
     // Delegate to streaming chat service (sets SSE headers internally)
-    await streamChat(user, message, activePath, res);
+    await streamChat(user, message, activePath, sessionId, res);
   } catch (err) {
     // If SSE headers already sent, we can't send a normal JSON error
     if (!res.headersSent) {

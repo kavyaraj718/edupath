@@ -4,7 +4,7 @@ import ReactMarkdown from "react-markdown"
 import { useAuthStore } from "../../store/authStore"
 
 // Define your API base URL for the fetch call
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000"
+const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api"
 
 const SUGGESTED_PROMPTS = [
   "Generate a learning path for Machine Learning",
@@ -86,17 +86,14 @@ function Message({ msg }) {
   )
 }
 
-export default function ChatInterface({ contextPath }) {
+export default function ChatInterface({ contextPath, sessionId, chatSession, onSessionTitle }) {
   const { user } = useAuthStore()
   
-  // FIXED: Check for !contextPath first so the "New" button gives a blank chat
   const [messages, setMessages] = useState(() => {
-    if (!contextPath) {
-      return [DEFAULT_WELCOME]
-    }
-    
-    if (user?.chatHistory && user.chatHistory.length > 0) {
-      return user.chatHistory.map((m) => ({
+    const session = chatSession || user?.chatSessions?.find((item) => item._id === sessionId)
+    const history = session?.messages || (sessionId === "legacy" ? user?.chatHistory : [])
+    if (history?.length > 0) {
+      return history.map((m) => ({
         role: m.role,
         content: m.content,
       }))
@@ -135,7 +132,7 @@ export default function ChatInterface({ contextPath }) {
       const response = await fetch(`${API_BASE_URL}/ai/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ message: userMsg, activePathId: contextPath?._id })
+        body: JSON.stringify({ message: userMsg, activePathId: contextPath?._id, sessionId })
       })
 
       if (!response.ok) {
@@ -210,6 +207,7 @@ export default function ChatInterface({ contextPath }) {
             : m
         )
       )
+      onSessionTitle?.(userMsg, fullContent || "No response received.")
     } catch (err) {
       console.error("Chat error:", err)
       setMessages((prev) =>
