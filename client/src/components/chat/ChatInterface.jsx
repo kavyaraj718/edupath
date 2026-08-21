@@ -3,6 +3,9 @@ import { Send, Bot, User, Sparkles, Loader2 } from "lucide-react"
 import ReactMarkdown from "react-markdown"
 import { useAuthStore } from "../../store/authStore"
 
+// Define your API base URL for the fetch call
+const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000"
+
 const SUGGESTED_PROMPTS = [
   "Generate a learning path for Machine Learning",
   "I want to become a Full Stack Developer in 3 months",
@@ -121,7 +124,9 @@ export default function ChatInterface({ contextPath }) {
 
     try {
       const token = localStorage.getItem("edupath_token")
-      const response = await fetch("/api/ai/chat", {
+      
+      // Updated fetch call using API_BASE_URL
+      const response = await fetch(`${API_BASE_URL}/api/ai/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({ message: userMsg, activePathId: contextPath?._id })

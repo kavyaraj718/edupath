@@ -41,7 +41,8 @@ export const aiApi = {
   generatePath: (data) => api.post("/ai/generate-path", data),
   explainConcept: (data) => api.post("/ai/explain-concept", data),
   getSkillGap: () => api.get("/ai/skill-gap"),
-  adaptMilestone: (data) => api.post("/ai/adapt-milestone", data)
+  adaptMilestone: (data) => api.post("/ai/adapt-milestone", data),
+  chat: (data) => api.post("/ai/chat", data)
 }
 
 export const progress = {
