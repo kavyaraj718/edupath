@@ -11,6 +11,18 @@ const { GoogleGenerativeAI } = require('@google/generative-ai');
 // Initialize Gemini client
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
+// Helper function to safely parse AI JSON responses and strip Markdown
+const parseAIResponse = (rawText) => {
+  try {
+    // Remove markdown code blocks if the AI added them
+    const cleanedText = rawText.replace(/```json/gi, '').replace(/```/g, '').trim();
+    return JSON.parse(cleanedText);
+  } catch (error) {
+    console.error("Failed to parse AI JSON. Raw output was:", rawText);
+    throw new Error("The AI returned malformed data that could not be processed.");
+  }
+};
+
 // ─── POST /api/ai/generate-path ───────────────────────────────────────────────
 const generatePath = async (req, res, next) => {
   try {
@@ -58,7 +70,7 @@ const generatePath = async (req, res, next) => {
       milestones: roadmapData.milestones || [],
       prerequisites: roadmapData.prerequisites || [],
       status: 'active',
-      generatedByModel: 'gemini-2.5-flash', // Updated to reflect new model
+      generatedByModel: 'gemini-2.5-flash',
       promptVersion: 'v1',
     });
 
@@ -145,7 +157,7 @@ Relevant domain/context: ${domain}
 Tailor the explanation appropriately for this level.`;
 
     const model = genAI.getGenerativeModel({
-      model: 'gemini-2.5-flash', // Updated to gemini-pro
+      model: 'gemini-2.5-flash',
       systemInstruction: systemPrompt,
       generationConfig: {
         temperature: 0.4,
@@ -155,7 +167,9 @@ Tailor the explanation appropriately for this level.`;
     });
 
     const result = await model.generateContent(userPrompt);
-    const explanation = JSON.parse(result.response.text());
+    
+    // Using the new helper function
+    const explanation = parseAIResponse(result.response.text());
 
     return res.status(200).json({
       success: true,
@@ -218,7 +232,9 @@ Identify the skill gap for this user to be job-ready for the target role.`;
     });
 
     const result = await model.generateContent(userPrompt);
-    const analysis = JSON.parse(result.response.text());
+    
+    // Using the new helper function
+    const analysis = parseAIResponse(result.response.text());
 
     return res.status(200).json({
       success: true,
@@ -329,7 +345,9 @@ Available courses (use these): ${JSON.stringify(
     });
 
     const result = await model.generateContent(userPrompt);
-    const adapted = JSON.parse(result.response.text());
+    
+    // Using the new helper function
+    const adapted = parseAIResponse(result.response.text());
 
     // Update milestone in path
     path.milestones[milestoneIndex].title = adapted.title || milestone.title;
