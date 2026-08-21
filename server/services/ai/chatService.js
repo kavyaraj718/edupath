@@ -59,9 +59,10 @@ function buildGeminiContents(chatHistory, userMessage) {
  * @param {Object} user        - Mongoose User document (already fetched).
  * @param {string} userMessage - The user's message.
  * @param {Object|null} activePath - The user's current LearningPath, if any.
+ * @param {string|null} sessionId - The conversation session to continue.
  * @param {Object} res         - Express response object.
  */
-const streamChat = async (user, userMessage, activePath, res) => {
+const streamChat = async (user, userMessage, activePath, sessionId, res) => {
   // ── Set SSE headers ────────────────────────────────────────────────────────
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache');
@@ -104,7 +105,16 @@ YOUR PERSONA & OUTPUT RULES:
 - Provide full, thorough explanations and complete answers. Never cut off or end abruptly in the middle of a sentence, list item, or code block.
 - Use clear Markdown formatting with headings, bold text, bullet points, and syntax-highlighted code blocks where appropriate.`;
 
-  const contents = buildGeminiContents(user.chatHistory, userMessage);
+  const selectedSession = (user.chatSessions || []).find(
+    (session) => session._id === sessionId
+  );
+  const legacyHistory = user.chatHistory || [];
+  const chatHistory = selectedSession
+    ? selectedSession.messages
+    : sessionId === 'legacy' || !(user.chatSessions || []).length
+      ? legacyHistory
+      : [];
+  const contents = buildGeminiContents(chatHistory, userMessage);
 
   const model = genAI.getGenerativeModel({
     model: 'gemini-2.5-flash',
@@ -167,25 +177,28 @@ YOUR PERSONA & OUTPUT RULES:
     // ── Persist conversation to DB (async, non-blocking) ─────────────────────
     setImmediate(async () => {
       try {
-        await User.findByIdAndUpdate(user._id, {
-          $push: {
-            chatHistory: {
-              $each: [
-                { role: 'user', content: userMessage, timestamp: new Date() },
-                { role: 'assistant', content: fullResponse, timestamp: new Date() },
-              ],
-            },
-          },
-        });
+        const updatedUser = await User.findById(user._id);
+        if (!updatedUser) return;
 
-        // Cap chat history to last 100 messages to avoid unbounded growth
-        const updatedUser = await User.findById(user._id).select('chatHistory');
-        if (updatedUser && updatedUser.chatHistory.length > 100) {
-          const trimmed = updatedUser.chatHistory.slice(-100);
-          await User.findByIdAndUpdate(user._id, {
-            $set: { chatHistory: trimmed },
-          });
+        const effectiveSessionId = sessionId || 'legacy';
+        let session = updatedUser.chatSessions.find(
+          (item) => item._id === effectiveSessionId
+        );
+        if (!session) {
+          session = {
+            _id: effectiveSessionId,
+            title: userMessage.trim().slice(0, 80) || 'New chat',
+            messages: effectiveSessionId === 'legacy' ? [...updatedUser.chatHistory] : [],
+          };
+          updatedUser.chatSessions.push(session);
         }
+
+        session.messages.push(
+          { role: 'user', content: userMessage, timestamp: new Date() },
+          { role: 'assistant', content: fullResponse, timestamp: new Date() }
+        );
+        session.messages = session.messages.slice(-100);
+        await updatedUser.save();
       } catch (saveErr) {
         console.error('[chatService] Failed to save chat history:', saveErr.message);
       }
