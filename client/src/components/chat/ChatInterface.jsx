@@ -88,7 +88,13 @@ function Message({ msg }) {
 
 export default function ChatInterface({ contextPath }) {
   const { user } = useAuthStore()
+  
+  // FIXED: Check for !contextPath first so the "New" button gives a blank chat
   const [messages, setMessages] = useState(() => {
+    if (!contextPath) {
+      return [DEFAULT_WELCOME]
+    }
+    
     if (user?.chatHistory && user.chatHistory.length > 0) {
       return user.chatHistory.map((m) => ({
         role: m.role,
@@ -97,6 +103,7 @@ export default function ChatInterface({ contextPath }) {
     }
     return [DEFAULT_WELCOME]
   })
+  
   const [input, setInput] = useState("")
   const [isStreaming, setIsStreaming] = useState(false)
   const messagesRef = useRef(null)
@@ -125,7 +132,6 @@ export default function ChatInterface({ contextPath }) {
     try {
       const token = localStorage.getItem("edupath_token")
       
-      // Updated fetch call using API_BASE_URL
       const response = await fetch(`${API_BASE_URL}/ai/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
