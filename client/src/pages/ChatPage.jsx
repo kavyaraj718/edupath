@@ -43,13 +43,13 @@ export default function ChatPage() {
             </div>
           )}
         </aside>
-        <div className="flex-1 flex flex-col overflow-hidden">
+        <div className="flex-1 min-h-0 min-w-0 flex flex-col overflow-hidden">
           <div className="border-b border-gray-800 px-6 py-3 flex items-center gap-2">
             <div className="h-2 w-2 bg-green-500 rounded-full animate-pulse" />
             <span className="font-medium text-sm">PathAI</span>
-            <span className="text-gray-500 text-xs">· Your personal learning coach</span>
+            <span className="text-gray-500 text-xs">Â· Your personal learning coach</span>
           </div>
-          <div className="flex-1 overflow-hidden">
+          <div className="flex-1 min-h-0 min-w-0 overflow-hidden">
             <ChatInterface contextPath={activePath} />
           </div>
         </div>

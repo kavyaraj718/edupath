@@ -6,7 +6,54 @@ const User = require('../../models/User');
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 /**
- * Stream a chat response to the client via Server-Sent Events (SSE) using Gemini.
+ * Builds a clean, strictly alternating list of Gemini contents from chatHistory.
+ * Gemini requires:
+ * 1. Roles to be 'user' or 'model'.
+ * 2. Strictly alternating turns ('user' -> 'model' -> 'user' -> ...).
+ * 3. The first message must have role 'user'.
+ * 4. Parts must contain non-empty text strings.
+ */
+function buildGeminiContents(chatHistory, userMessage) {
+  const safeHistory = (chatHistory || [])
+    .slice(-14)
+    .filter((msg) => msg && typeof msg.content === 'string' && msg.content.trim().length > 0)
+    .map((msg) => ({
+      role: msg.role === 'assistant' ? 'model' : 'user',
+      text: msg.content.trim(),
+    }));
+
+  const cleaned = [];
+  for (const item of safeHistory) {
+    if (cleaned.length === 0) {
+      if (item.role === 'user') {
+        cleaned.push(item);
+      }
+    } else {
+      const prev = cleaned[cleaned.length - 1];
+      if (prev.role === item.role) {
+        prev.text += `\n\n${item.text}`;
+      } else {
+        cleaned.push(item);
+      }
+    }
+  }
+
+  // Ensure current user message is included
+  const currentMsg = (userMessage || '').trim();
+  if (cleaned.length > 0 && cleaned[cleaned.length - 1].role === 'user') {
+    cleaned[cleaned.length - 1].text += `\n\n${currentMsg}`;
+  } else {
+    cleaned.push({ role: 'user', text: currentMsg });
+  }
+
+  return cleaned.map((c) => ({
+    role: c.role,
+    parts: [{ text: c.text }],
+  }));
+}
+
+/**
+ * Send a complete chat response via Server-Sent Events (SSE) using Gemini.
  * Saves the conversation turn to user.chatHistory.
  *
  * @param {Object} user        - Mongoose User document (already fetched).
@@ -48,53 +95,69 @@ USER CONTEXT:
 - Experience: ${user.experience || 'student'}
 - Skills: ${userSkills}${pathContext}
 
-YOUR PERSONA:
-- Warm, motivating, and technically precise
-- Provide actionable advice, not vague encouragement
-- When asked about learning topics, give structured, step-by-step guidance
-- Reference the user's active path and progress when relevant
-- Suggest specific resources when helpful
-- Keep responses concise but complete (200-400 words unless detail is needed)
-- Use markdown formatting for code, lists, and headings when appropriate`;
+YOUR PERSONA & OUTPUT RULES:
+- Warm, motivating, and technically precise.
+- Provide actionable advice, not vague encouragement.
+- When asked about learning topics, give structured, step-by-step guidance.
+- Reference the user's active path and progress when relevant.
+- Suggest specific resources when helpful.
+- Provide full, thorough explanations and complete answers. Never cut off or end abruptly in the middle of a sentence, list item, or code block.
+- Use clear Markdown formatting with headings, bold text, bullet points, and syntax-highlighted code blocks where appropriate.`;
 
-  // ── Build conversation history (last 10 messages) ─────────────────────────
-  // Note: Gemini expects roles to be 'user' or 'model' (instead of 'assistant')
-  const historyContents = (user.chatHistory || [])
-    .slice(-10)
-    .map((msg) => ({
-      role: msg.role === 'assistant' ? 'model' : 'user',
-      parts: [{ text: msg.content }],
-    }));
+  const contents = buildGeminiContents(user.chatHistory, userMessage);
 
-  const contents = [
-    ...historyContents,
-    { role: 'user', parts: [{ text: userMessage }] },
-  ];
-
-  // Configure the Gemini model
-  // Configure the Gemini model
   const model = genAI.getGenerativeModel({
-    model: 'gemini-2.5-flash', // Updated to gemini-pro
+    model: 'gemini-2.5-flash',
     systemInstruction: systemPrompt,
     generationConfig: {
       temperature: 0.7,
-      maxOutputTokens: 1024,
+      maxOutputTokens: 8192,
     },
   });
 
-  // ── Stream Gemini response ─────────────────────────────────────────────────
   let fullResponse = '';
 
   try {
     const resultStream = await model.generateContentStream({ contents });
 
     for await (const chunk of resultStream.stream) {
-      const delta = chunk.text();
-      if (delta) {
-        fullResponse += delta;
-        // Send SSE event
-        res.write(`data: ${JSON.stringify({ delta })}\n\n`);
+      const chunkText = chunk.text();
+      if (chunkText) {
+        fullResponse += chunkText;
+        res.write(`data: ${JSON.stringify({ delta: chunkText })}\n\n`);
       }
+    }
+
+    // Check if the generation was truncated due to max tokens, and continue if needed
+    try {
+      const responseData = await resultStream.response;
+      const finishReason = responseData.candidates?.[0]?.finishReason;
+
+      if (finishReason === 'MAX_TOKENS') {
+        const continuationContents = [
+          ...contents,
+          { role: 'model', parts: [{ text: fullResponse }] },
+          {
+            role: 'user',
+            parts: [{ text: 'Continue exactly where you stopped. Do not repeat prior text; finish the remaining answer completely.' }],
+          },
+        ];
+
+        const continuationStream = await model.generateContentStream({ contents: continuationContents });
+        for await (const chunk of continuationStream.stream) {
+          const chunkText = chunk.text();
+          if (chunkText) {
+            fullResponse += chunkText;
+            res.write(`data: ${JSON.stringify({ delta: chunkText })}\n\n`);
+          }
+        }
+      }
+    } catch (finishErr) {
+      console.warn('[chatService] Non-critical finish check warning:', finishErr.message);
+    }
+
+    if (!fullResponse) {
+      throw new Error('Gemini returned an empty response.');
     }
 
     // Signal stream end

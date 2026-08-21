@@ -76,7 +76,7 @@ const learningPathSchema = new mongoose.Schema(
     completionPct: { type: Number, default: 0, min: 0, max: 100 },
     userFeedback: { type: [feedbackSchema], default: [] },
     adaptations: { type: [adaptationSchema], default: [] },
-    generatedByModel: { type: String, default: 'gpt-4o' },
+    generatedByModel: { type: String, default: 'gemini-2.5-flash' },
     promptVersion: { type: String, default: 'v1' },
   },
   {

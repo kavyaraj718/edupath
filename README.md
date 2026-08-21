@@ -1,11 +1,11 @@
 # EduPath - AI-Powered Personalized Learning Path Recommender
 
-> MERN Stack + OpenAI GPT-4o | Hackathon Project
+> MERN Stack + Google Gemini Flash | Hackathon Project
 
 ## Quick Start
 
 ### Prerequisites
-- Node.js 18+, MongoDB Atlas account, OpenAI API key
+- Node.js 18+, MongoDB Atlas account, Google Gemini API key
 
 ### 1. Install dependencies
 ```bash
@@ -17,7 +17,7 @@ cd ../client && npm install
 ```bash
 cd server
 cp .env.example .env
-# Edit .env with your MongoDB URI and OpenAI API key
+# Edit .env with your MongoDB URI and Gemini API key
 ```
 
 ### 3. Set up MongoDB Atlas Vector Search
@@ -45,17 +45,17 @@ cd client && npm run dev
 - **Frontend**: React 18, Vite, TailwindCSS, Zustand, Recharts, Framer Motion
 - **Backend**: Node.js, Express, Mongoose, JWT, bcryptjs
 - **Database**: MongoDB Atlas + Vector Search
-- **AI**: OpenAI GPT-4o (roadmap), GPT-4o-mini (chat/extraction), text-embedding-3-small (RAG)
+- **AI**: Gemini 2.5 Flash (roadmap, chat, and extraction), gemini-embedding-001 (RAG)
 
 ## AI Features
 | Feature | Model | Description |
 |---|---|---|
-| Intent Extraction | GPT-4o-mini | Parses natural language goals |
-| Roadmap Generation | GPT-4o | Personalized week-by-week plans |
-| Streaming Chat | GPT-4o | Real-time AI tutor (SSE) |
-| Skill Gap Analysis | GPT-4o-mini | Missing skills for target role |
-| Concept Explainer | GPT-4o-mini | ELI5 for any technical term |
-| Path Adaptation | GPT-4o | Adjusts difficulty from feedback |
+| Intent Extraction | Gemini 2.5 Flash | Parses natural language goals |
+| Roadmap Generation | Gemini 2.5 Flash | Personalized week-by-week plans |
+| Streaming Chat | Gemini 2.5 Flash | Real-time AI tutor (SSE) |
+| Skill Gap Analysis | Gemini 2.5 Flash | Missing skills for target role |
+| Concept Explainer | Gemini 2.5 Flash | ELI5 for any technical term |
+| Path Adaptation | Gemini 2.5 Flash | Adjusts difficulty from feedback |
 
 ## Deployment
 - **Frontend**: [Vercel](https://vercel.com)
