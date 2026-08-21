@@ -126,7 +126,7 @@ export default function ChatInterface({ contextPath }) {
       const token = localStorage.getItem("edupath_token")
       
       // Updated fetch call using API_BASE_URL
-      const response = await fetch(`${API_BASE_URL}/api/ai/chat`, {
+      const response = await fetch(`${API_BASE_URL}/ai/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({ message: userMsg, activePathId: contextPath?._id })
