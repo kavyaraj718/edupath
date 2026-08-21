@@ -2,6 +2,7 @@
 
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
+const crypto = require('crypto');
 
 const skillSchema = new mongoose.Schema(
   {
@@ -22,6 +23,15 @@ const chatMessageSchema = new mongoose.Schema(
     role: { type: String, enum: ['user', 'assistant'], required: true },
     content: { type: String, required: true },
     timestamp: { type: Date, default: Date.now },
+  },
+  { _id: false }
+);
+
+const chatSessionSchema = new mongoose.Schema(
+  {
+    _id: { type: String, default: () => crypto.randomUUID() },
+    title: { type: String, default: 'New chat', trim: true, maxlength: 120 },
+    messages: { type: [chatMessageSchema], default: [] },
   },
   { _id: false }
 );
@@ -81,6 +91,7 @@ const userSchema = new mongoose.Schema(
     timezone: { type: String, default: 'UTC' },
     onboardingComplete: { type: Boolean, default: false },
     chatHistory: { type: [chatMessageSchema], default: [] },
+    chatSessions: { type: [chatSessionSchema], default: [] },
   },
   {
     timestamps: true,
