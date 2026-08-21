@@ -18,9 +18,12 @@ export default function ChatPage() {
         <aside className="w-full md:w-64 border-b md:border-b-0 md:border-r border-gray-800 p-4 shrink-0 flex flex-col gap-3">
           <div className="flex items-center justify-between">
             <h2 className="font-semibold text-sm text-gray-300">Your Paths</h2>
-            <button onClick={() => setActivePath(null)} className="text-xs text-primary-400 hover:text-primary-300 flex items-center gap-1">
+            
+            {/* FIX 1: Navigate back to /chat while clearing the active path */}
+            <button onClick={() => { setActivePath(null); navigate("/chat"); }} className="text-xs text-primary-400 hover:text-primary-300 flex items-center gap-1">
               <Plus className="h-3 w-3" /> New
             </button>
+            
           </div>
           {isLoading ? (
             <div className="flex justify-center py-4"><Loader2 className="h-5 w-5 animate-spin text-gray-500" /></div>
@@ -50,7 +53,10 @@ export default function ChatPage() {
             <span className="text-gray-500 text-xs">· Your personal learning coach</span>
           </div>
           <div className="flex-1 min-h-0 min-w-0 overflow-hidden">
-            <ChatInterface contextPath={activePath} />
+            
+            {/* FIX 2: Added the key prop to force React to reset the component */}
+            <ChatInterface key={activePath?._id || 'new-chat'} contextPath={activePath} />
+            
           </div>
         </div>
       </div>
