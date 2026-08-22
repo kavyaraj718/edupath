@@ -11,7 +11,7 @@ export default function SkillGapAnalysis() {
     setLoading(true)
     try {
       const res = await aiApi.getSkillGap()
-      setResult(res.data)
+      setResult(res.data.analysis)
     } catch {
       toast.error("Failed to analyze skill gap")
     } finally {
